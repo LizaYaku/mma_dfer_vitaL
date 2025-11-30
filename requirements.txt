@@ -1,0 +1,12 @@
+einops==0.7.0+computecanada
+librosa==0.10.1+computecanada
+pillow==10.2.0+computecanada
+safetensors==0.4.3+computecanada
+scikit_learn==1.4.2+computecanada
+soundfile==0.12.1+computecanada
+timm==0.9.16+computecanada
+torch==2.2.0+computecanada
+torchaudio==2.2.0+computecanada
+torchvision==0.17.0+computecanada
+tqdm==4.66.2+computecanada
+urllib3==2.0.4+computecanada
