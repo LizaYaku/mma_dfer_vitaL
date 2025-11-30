@@ -106,7 +106,7 @@ class GenerateModel(nn.Module):
         
         assert len(self.audio_model.blocks) == len(self.image_encoder.blocks)
 
-    def _build_audio_model(self, model_name='vit_base_patch16', drop_path_rate=0.1, global_pool=False, mask_2d=True, use_custom_patch=False, ckpt_path='audiomae_pretrained.pth'):
+    def _build_audio_model(self, model_name='vit_base_patch16', drop_path_rate=0.1, global_pool=False, mask_2d=True, use_custom_patch=False, ckpt_path='./audiomae_pretrained.pth'):
         self.audio_model = audio_models_vit.__dict__[model_name](
             drop_path_rate=drop_path_rate,
             global_pool=global_pool,

@@ -24,13 +24,13 @@ class VideoRecord(object):
     def set_num_frames(self, nn):
         self._data[1] = nn
  
-    @property
-    def label(self):
-        return int(self._data[2])
+    # @property # we don't need a label for this
+    # def label(self):
+    #     return int(self._data[2])
 
 
 class VideoDataset(data.Dataset):
-    def __init__(self, list_file, num_segments, duration, mode, transform, image_size):
+    def __init__(self, list_file, num_segments, duration, mode, transform, image_size,dataset):
 
         self.list_file = list_file
         self.duration = duration
@@ -39,6 +39,7 @@ class VideoDataset(data.Dataset):
         self.image_size = image_size
         self.mode = mode
         self._parse_list()
+        self.dataset=dataset
         pass
 
     def _parse_list(self):
@@ -50,18 +51,18 @@ class VideoDataset(data.Dataset):
         self.video_list = [VideoRecord(item) for item in tmp]
         print(('video number:%d' % (len(self.video_list))))
 
-    def _get_train_indices(self, record):
-        # 
-        # Split all frames into seg parts, then select frame in each part randomly
-        #
-        average_duration = (record.num_frames - self.duration + 1) // self.num_segments
-        if average_duration > 0:
-            offsets = np.multiply(list(range(self.num_segments)), average_duration) + randint(average_duration, size=self.num_segments)
-        elif record.num_frames > self.num_segments:
-            offsets = np.sort(randint(record.num_frames - self.duration + 1, size=self.num_segments))
-        else:
-            offsets = np.pad(np.array(list(range(record.num_frames))), (0, self.num_segments - record.num_frames), 'edge')
-        return offsets
+    # def _get_train_indices(self, record):
+    #     # 
+    #     # Split all frames into seg parts, then select frame in each part randomly
+    #     #
+    #     average_duration = (record.num_frames - self.duration + 1) // self.num_segments
+    #     if average_duration > 0:
+    #         offsets = np.multiply(list(range(self.num_segments)), average_duration) + randint(average_duration, size=self.num_segments)
+    #     elif record.num_frames > self.num_segments:
+    #         offsets = np.sort(randint(record.num_frames - self.duration + 1, size=self.num_segments))
+    #     else:
+    #         offsets = np.pad(np.array(list(range(record.num_frames))), (0, self.num_segments - record.num_frames), 'edge')
+    #     return offsets
 
     def _get_test_indices(self, record):
         # 
@@ -136,7 +137,7 @@ class VideoDataset(data.Dataset):
 
     def get(self, record, indices):
         video_frames_path = glob.glob(os.path.join(record.path, '*'))
-        video_frames_path.sort()
+        video_frames_path.sort(key=lambda x: int(x.split('/')[7][2:-4]))
         images = list()
         for seg_ind in indices:
             p = int(seg_ind)
@@ -145,8 +146,9 @@ class VideoDataset(data.Dataset):
                 images.extend(seg_imgs)
                 if p < record.num_frames - 1:
                     p += 1
-        if "clip_224x224" in video_frames_path[p]:
-             fbank, mix_lambda = self._wav2fbank('/'.join(video_frames_path[p].split('/')[:-2]).replace('clip_224x224', 'raw_wav') + '/' + str(int(video_frames_path[p].split('/')[-2]))+'.wav')
+        if self.dataset == 'DFEW':
+          idx = int(video_frames_path[p].split('/')[6][2:])
+          fbank, mix_lambda = self._wav2fbank('/content/sample_data/mini_avor/mini_avor/audios/'+f'au{idx}.wav')
         elif "mfaw" in video_frames_path[p]:
              if not os.path.exists('/'.join(video_frames_path[p].split('/')[:-2]).replace('clips_faces', 'clips_wav') + '/' + video_frames_path[p].split('/')[-2]+'.wav'):
                  fbank = torch.zeros(512,128)
@@ -186,7 +188,7 @@ def train_data_loader(list_file, num_segments, duration, image_size, args):
     return train_data
 
 
-def test_data_loader(list_file, num_segments, duration, image_size):
+def test_data_loader(list_file, num_segments, duration, image_size,dataset):
     
     test_transform = torchvision.transforms.Compose([GroupResize(image_size),
                                                      Stack(),
@@ -197,5 +199,6 @@ def test_data_loader(list_file, num_segments, duration, image_size):
                              duration=duration,
                              mode='test',
                              transform=test_transform,
-                             image_size=image_size)
+                             image_size=image_size,
+                             dataset=dataset)
     return test_data
