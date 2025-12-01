@@ -30,7 +30,7 @@ class VideoRecord(object):
 
 
 class VideoDataset(data.Dataset):
-    def __init__(self, list_file, num_segments, duration, mode, transform, image_size,dataset):
+    def __init__(self, list_file, num_segments, duration, mode, transform, image_size, dataset, audio_path):
 
         self.list_file = list_file
         self.duration = duration
@@ -40,6 +40,7 @@ class VideoDataset(data.Dataset):
         self.mode = mode
         self._parse_list()
         self.dataset=dataset
+        self.audio_path = audio_path
         pass
 
     def _parse_list(self):
@@ -137,7 +138,7 @@ class VideoDataset(data.Dataset):
 
     def get(self, record, indices):
         video_frames_path = glob.glob(os.path.join(record.path, '*'))
-        video_frames_path.sort(key=lambda x: int(x.split('/')[7][2:-4]))
+        video_frames_path.sort(key=lambda x: int(x.split('/')[-1][2:-4]))
         images = list()
         for seg_ind in indices:
             p = int(seg_ind)
@@ -147,8 +148,8 @@ class VideoDataset(data.Dataset):
                 if p < record.num_frames - 1:
                     p += 1
         if self.dataset == 'DFEW':
-          idx = int(video_frames_path[p].split('/')[6][2:])
-          fbank, mix_lambda = self._wav2fbank('/content/sample_data/mini_avor/mini_avor/audios/'+f'au{idx}.wav')
+          idx = int(video_frames_path[p].split('/')[-2][2:])
+          fbank, mix_lambda = self._wav2fbank(self.audio_path+f'/au{idx}.wav')
         elif "mfaw" in video_frames_path[p]:
              if not os.path.exists('/'.join(video_frames_path[p].split('/')[:-2]).replace('clips_faces', 'clips_wav') + '/' + video_frames_path[p].split('/')[-2]+'.wav'):
                  fbank = torch.zeros(512,128)
@@ -164,7 +165,7 @@ class VideoDataset(data.Dataset):
         images = self.transform(images)
         images = torch.reshape(images, (-1, 3, self.image_size, self.image_size))
 
-        return images, record.label, fbank.unsqueeze(0)
+        return images, fbank.unsqueeze(0)
 
     def __len__(self):
         return len(self.video_list)
@@ -188,7 +189,7 @@ def train_data_loader(list_file, num_segments, duration, image_size, args):
     return train_data
 
 
-def test_data_loader(list_file, num_segments, duration, image_size,dataset):
+def test_data_loader(list_file, num_segments, duration, image_size, dataset, audio_path):
     
     test_transform = torchvision.transforms.Compose([GroupResize(image_size),
                                                      Stack(),
@@ -200,5 +201,6 @@ def test_data_loader(list_file, num_segments, duration, image_size,dataset):
                              mode='test',
                              transform=test_transform,
                              image_size=image_size,
-                             dataset=dataset)
+                             dataset=dataset,
+                             audio_path=audio_path)
     return test_data
