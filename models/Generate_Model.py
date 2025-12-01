@@ -106,7 +106,7 @@ class GenerateModel(nn.Module):
         
         assert len(self.audio_model.blocks) == len(self.image_encoder.blocks)
 
-    def _build_audio_model(self, model_name='vit_base_patch16', drop_path_rate=0.1, global_pool=False, mask_2d=True, use_custom_patch=False, ckpt_path='./audiomae_pretrained.pth'):
+    def _build_audio_model(self, model_name='vit_base_patch16', drop_path_rate=0.1, global_pool=False, mask_2d=True, use_custom_patch=False):
         self.audio_model = audio_models_vit.__dict__[model_name](
             drop_path_rate=drop_path_rate,
             global_pool=global_pool,
@@ -114,6 +114,7 @@ class GenerateModel(nn.Module):
             use_custom_patch=use_custom_patch, 
             n_seq = self.n_audio, 
             n_progr = self.n_progr)
+        ckpt_path = self.args.audio_mae_path
         ckpt = torch.load(ckpt_path, map_location='cpu')
         ckpt = ckpt['model']
         orig_pos_embed =  ckpt['pos_embed']
@@ -130,8 +131,8 @@ class GenerateModel(nn.Module):
         print('Audio checkpoint loading: ', msg)
 
 
-    def _build_image_model(self, model_name='vit_base_patch16', ckpt_path='./mae_face_pretrain_vit_base.pth', 
-                           global_pool = False, num_heads=12, drop_path_rate=0.1, img_size=224, n_frames=16):
+    def _build_image_model(self, model_name='vit_base_patch16', global_pool = False, 
+                           num_heads=12, drop_path_rate=0.1, img_size=224, n_frames=16):
 
         self.image_encoder = getattr(models_vit, model_name)(
             global_pool=global_pool,
@@ -142,7 +143,7 @@ class GenerateModel(nn.Module):
             n_progr = self.n_progr,
             n_frames=n_frames,
             )
-
+        ckpt_path = self.args.vit_path
         checkpoint = torch.load(ckpt_path, map_location='cpu')
         checkpoint_model = checkpoint['model']
         orig_pos_embed =  checkpoint_model['pos_embed']
